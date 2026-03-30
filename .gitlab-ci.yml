@@ -1,0 +1,102 @@
+include:
+  - project: 'devops/cicd'
+    ref: 'master'
+    file: 'base/remove-img-old.yml'
+stages:
+  - build
+  - deploy
+  - notify_success
+  - notify_failure
+  - remove_image_old
+.build_template:
+  before_script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.whatapp-api.latest || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.whatapp-api.latest -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$CI_COMMIT_SHORT_SHA.whatapp-api -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.whatapp-api.latest .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.whatapp-api.latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$CI_COMMIT_SHORT_SHA.whatapp-api
+  after_script:
+    - docker rmi $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.whatapp-api.latest
+    - docker rmi $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$CI_COMMIT_SHORT_SHA.whatapp-api
+    - docker rmi $(docker images -f "dangling=true" -q) || true
+
+build_image_dev:
+  stage: build
+  extends: .build_template
+  only:
+    - dev
+  tags:
+    - evg
+
+deploy_dev:
+  stage: deploy
+  image: alpine:latest
+  variables:
+    PROJECT_DIR: '/root/baileys2api-whatapp-api'
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_DEV" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+  script:
+    - ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER_DEV@$SSH_IP_DEV "cd $PROJECT_DIR && docker compose down"
+    - ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER_DEV@$SSH_IP_DEV "yq e '.services.whatapp-api.image = \"$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH.$CI_COMMIT_SHORT_SHA.whatapp-api\"' $PROJECT_DIR/docker-compose.yml -i"
+    - ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER_DEV@$SSH_IP_DEV "cd $PROJECT_DIR && docker compose up -d"
+    - ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER_DEV@$SSH_IP_DEV "cd $PROJECT_DIR && docker compose ps -a"
+  after_script:
+    - ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SSH_USER_DEV@$SSH_IP_DEV "docker image prune -a -f"
+  only:
+    - dev
+  tags:
+    - evg
+
+prune_img_old:
+  stage: remove_image_old
+  extends:
+    - .remove-img
+  environment:
+    name: dev
+  variables:
+    GITOPS_SECRET: huyabc321
+    GITOPS: http://img-old-delete-img-old.argocd/delete
+  only:
+    - dev
+  tags:
+    - k8s-dev
+
+notify_success:
+  image: alpine
+  stage: notify_success
+  before_script:
+    - apk add --no-cache curl jq
+  variables:
+    CHAT_ID: "-4916051911"
+    TOKEN_BOT: "8249105997:AAGkbkMTPZlGrMJ5Sukg1aPtDgZu7bSbIjU"
+  script:
+    - |
+      curl -X POST -H "Content-Type: application/json" -d "{\"chat_id\": \"$CHAT_ID\", \"text\": \"✅ ${CI_PROJECT_NAME} pipeline succeed on branch ${CI_COMMIT_REF_NAME} of ${CI_COMMIT_MESSAGE}\"}" https://api.telegram.org/bot$TOKEN_BOT/sendMessage
+  when: on_success
+  only:
+    - dev
+  tags:
+    - evg
+
+
+notify_failure:
+  image: alpine
+  stage: notify_failure
+  before_script:
+    - apk add --no-cache curl jq
+  variables:
+    CHAT_ID: "-4916051911"
+    TOKEN_BOT: "8249105997:AAGkbkMTPZlGrMJ5Sukg1aPtDgZu7bSbIjU"
+  script:
+    - |
+      curl -X POST -H "Content-Type: application/json" -d "{\"chat_id\": \"$CHAT_ID\", \"text\": \" ❌ Project: $CI_PROJECT_NAME $JOB_NAME false on branch ${CI_COMMIT_REF_NAME} of ${CI_COMMIT_MESSAGE} \"}" https://api.telegram.org/bot$TOKEN_BOT/sendMessage
+  when: on_failure
+  allow_failure: false
+  only:
+    - dev
+  tags:
+    - evg
