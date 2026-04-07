@@ -75,8 +75,8 @@ deploy_k8s:
     - apk add --no-cache openssh-client
     - chmod 600 "$SSH_KEY_K8S" || true
   script:
-    - ssh -i $SSH_KEY_K8S -o StrictHostKeyChecking=no $SSH_USER@$IP_VAN "cd $PATH_DIR && git pull origin main"
-    - ssh -i $SSH_KEY_K8S -o StrictHostKeyChecking=no $SSH_USER@$IP_VAN "cd $PATH_DIR && helm --kubeconfig=/kube-config/dev/config upgrade --install whatapp-api . -n support-ai"
+    - ssh -i "$SSH_KEY_K8S" -o StrictHostKeyChecking=no $SSH_USER@$IP_VAN "cd $PATH_DIR && git pull origin main"
+    - ssh -i "$SSH_KEY_K8S" -o StrictHostKeyChecking=no $SSH_USER@$IP_VAN "cd $PATH_DIR && helm --kubeconfig=/kube-config/dev/config upgrade --install whatapp-api . -n support-ai"
   when: manual
   only:
     - main
