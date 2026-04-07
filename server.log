@@ -1,0 +1,15 @@
+
+> app@1.0.0 start
+> node src/app.js
+
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+Server is running on http://localhost:3000
+Initializing 0 accounts...
+User connected to dashboard
+User disconnected from dashboard
+User connected to dashboard
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+{"level":30,"time":1774450545925,"pid":12291,"hostname":"devbox","trace":"Error: Intentional Logout\n    at Object.logout (file:///app/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:583:13)\n    at logout (/app/src/whatsapp/client.js:96:24)\n    at deleteAccount (/app/src/controllers/auth.controller.js:38:15)\n    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)\n    at next (/app/node_modules/router/lib/route.js:157:13)\n    at accountMiddleware (/app/src/app.js:63:5)\n    at Layer.handleRequest (/app/node_modules/router/lib/layer.js:152:17)\n    at next (/app/node_modules/router/lib/route.js:157:13)\n    at Route.dispatch (/app/node_modules/router/lib/route.js:117:3)\n    at handle (/app/node_modules/router/index.js:435:11)","msg":"connection errored"}
+User disconnected from dashboard
+Terminated

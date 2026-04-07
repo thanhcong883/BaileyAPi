@@ -1,0 +1,512 @@
+diff --git a/config.json b/config.json
+new file mode 100644
+index 0000000..2231f4d
+--- /dev/null
++++ b/config.json
+@@ -0,0 +1,3 @@
++{
++  "webhookUrl": "https://example.com/webhook"
++}
+\ No newline at end of file
+diff --git a/dashboard/index.html b/dashboard/index.html
+index 30fe750..5ea5d1b 100644
+--- a/dashboard/index.html
++++ b/dashboard/index.html
+@@ -24,9 +24,17 @@
+         button.secondary { background-color: #666; }
+         .flex { display: flex; gap: 20px; }
+         .flex > div { flex: 1; }
++        .nav { margin-bottom: 20px; }
++        .nav a { margin-right: 15px; color: #25d366; text-decoration: none; font-weight: bold; }
++        .nav a:hover { text-decoration: underline; }
+     </style>
+ </head>
+ <body>
++    <div class="nav">
++        <a href="/dashboard">Dashboard</a>
++        <a href="/api-docs" target="_blank">API Docs</a>
++    </div>
++
+     <h1>WhatsApp API Dashboard</h1>
+
+     <div class="card">
+@@ -39,6 +47,13 @@
+         <button onclick="refreshGroups()">Refresh Groups</button>
+     </div>
+
++    <div class="card">
++        <h2>Webhook Configuration</h2>
++        <label for="webhook-url">Webhook URL</label>
++        <input type="text" id="webhook-url" placeholder="https://your-server.com/webhook">
++        <button onclick="updateWebhook()">Save Webhook URL</button>
++    </div>
++
+     <div class="flex">
+         <div>
+             <div class="card">
+@@ -72,6 +87,41 @@
+             height: 256
+         });
+
++        // Initialize Webhook Settings
++        async function fetchWebhookSettings() {
++            try {
++                const response = await fetch('/api/settings/webhook');
++                const data = await response.json();
++                if (data.webhookUrl) {
++                    document.getElementById('webhook-url').value = data.webhookUrl;
++                }
++            } catch (err) {
++                console.error('Failed to fetch webhook settings', err);
++            }
++        }
++
++        fetchWebhookSettings();
++
++        async function updateWebhook() {
++            const webhookUrl = document.getElementById('webhook-url').value;
++            try {
++                const response = await fetch('/api/settings/webhook', {
++                    method: 'POST',
++                    headers: { 'Content-Type': 'application/json' },
++                    body: JSON.stringify({ webhookUrl })
++                });
++                const result = await response.json();
++                if (result.success) {
++                    alert('Webhook URL updated successfully!');
++                } else {
++                    alert('Error: ' + result.error);
++                }
++            } catch (err) {
++                alert('Failed to update webhook URL');
++                console.error(err);
++            }
++        }
++
+         socket.on('status', (status) => {
+             const statusEl = document.getElementById('status');
+             statusEl.innerText = status;
+diff --git a/docs/swagger.json b/docs/swagger.json
+new file mode 100644
+index 0000000..ca04713
+--- /dev/null
++++ b/docs/swagger.json
+@@ -0,0 +1,124 @@
++{
++  "openapi": "3.0.0",
++  "info": {
++    "title": "WhatsApp API",
++    "version": "1.0.0",
++    "description": "API documentation for the WhatsApp Baileys integration"
++  },
++  "servers": [
++    {
++      "url": "http://localhost:3000/api"
++    }
++  ],
++  "paths": {
++    "/auth/login": {
++      "post": {
++        "summary": "Generate QR code",
++        "responses": {
++          "200": {
++            "description": "QR generated"
++          }
++        }
++      }
++    },
++    "/auth/logout": {
++      "post": {
++        "summary": "Logout and reset session",
++        "responses": {
++          "200": {
++            "description": "Logged out"
++          }
++        }
++      }
++    },
++    "/auth/status": {
++      "get": {
++        "summary": "Get connection status",
++        "responses": {
++          "200": {
++            "description": "Current status"
++          }
++        }
++      }
++    },
++    "/messages/send": {
++      "post": {
++        "summary": "Send direct message",
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "type": "object",
++                "properties": {
++                  "to": { "type": "string", "example": "849xxxxxxxx@s.whatsapp.net" },
++                  "message": { "type": "string", "example": "Hello" }
++                }
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": { "description": "Message sent" }
++        }
++      }
++    },
++    "/groups/list": {
++      "get": {
++        "summary": "List all participating groups",
++        "responses": {
++          "200": { "description": "List of groups" }
++        }
++      }
++    },
++    "/groups/send": {
++      "post": {
++        "summary": "Send message to a group",
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "type": "object",
++                "properties": {
++                  "groupId": { "type": "string", "example": "123456789@g.us" },
++                  "message": { "type": "string", "example": "Hello group" }
++                }
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": { "description": "Group message sent" }
++        }
++      }
++    },
++    "/settings/webhook": {
++      "get": {
++        "summary": "Get webhook configuration",
++        "responses": {
++          "200": { "description": "Webhook URL" }
++        }
++      },
++      "post": {
++        "summary": "Update webhook configuration",
++        "requestBody": {
++          "required": true,
++          "content": {
++            "application/json": {
++              "schema": {
++                "type": "object",
++                "properties": {
++                  "webhookUrl": { "type": "string", "example": "https://myserver.com/callback" }
++                }
++              }
++            }
++          }
++        },
++        "responses": {
++          "200": { "description": "Webhook updated" }
++        }
++      }
++    }
++  }
++}
+diff --git a/package-lock.json b/package-lock.json
+index 17aa0b9..e48a3cd 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -16,7 +16,8 @@
+         "pino": "^10.3.1",
+         "qrcode": "^1.5.4",
+         "qrcode-terminal": "^0.12.0",
+-        "socket.io": "^4.8.3"
++        "socket.io": "^4.8.3",
++        "swagger-ui-express": "^5.0.1"
+       },
+       "devDependencies": {
+         "@playwright/test": "^1.58.2",
+@@ -741,6 +742,13 @@
+       "integrity": "sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==",
+       "license": "BSD-3-Clause"
+     },
++    "node_modules/@scarf/scarf": {
++      "version": "1.4.0",
++      "resolved": "https://registry.npmjs.org/@scarf/scarf/-/scarf-1.4.0.tgz",
++      "integrity": "sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==",
++      "hasInstallScript": true,
++      "license": "Apache-2.0"
++    },
+     "node_modules/@socket.io/component-emitter": {
+       "version": "3.1.2",
+       "resolved": "https://registry.npmjs.org/@socket.io/component-emitter/-/component-emitter-3.1.2.tgz",
+@@ -2782,6 +2790,30 @@
+         "url": "https://github.com/sponsors/Borewit"
+       }
+     },
++    "node_modules/swagger-ui-dist": {
++      "version": "5.32.1",
++      "resolved": "https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.32.1.tgz",
++      "integrity": "sha512-6HQoo7+j8PA2QqP5kgAb9dl1uxUjvR0SAoL/WUp1sTEvm0F6D5npgU2OGCLwl++bIInqGlEUQ2mpuZRZYtyCzQ==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@scarf/scarf": "=1.4.0"
++      }
++    },
++    "node_modules/swagger-ui-express": {
++      "version": "5.0.1",
++      "resolved": "https://registry.npmjs.org/swagger-ui-express/-/swagger-ui-express-5.0.1.tgz",
++      "integrity": "sha512-SrNU3RiBGTLLmFU8GIJdOdanJTl4TOmT27tt3bWWHppqYmAZ6IDuEuBvMU6nZq0zLEe6b/1rACXCgLZqO6ZfrA==",
++      "license": "MIT",
++      "dependencies": {
++        "swagger-ui-dist": ">=5.0.0"
++      },
++      "engines": {
++        "node": ">= v0.10.32"
++      },
++      "peerDependencies": {
++        "express": ">=4.0.0 || >=5.0.0-beta"
++      }
++    },
+     "node_modules/thread-stream": {
+       "version": "4.0.0",
+       "resolved": "https://registry.npmjs.org/thread-stream/-/thread-stream-4.0.0.tgz",
+diff --git a/package.json b/package.json
+index 9c2df2b..ea3c828 100644
+--- a/package.json
++++ b/package.json
+@@ -27,7 +27,8 @@
+     "pino": "^10.3.1",
+     "qrcode": "^1.5.4",
+     "qrcode-terminal": "^0.12.0",
+-    "socket.io": "^4.8.3"
++    "socket.io": "^4.8.3",
++    "swagger-ui-express": "^5.0.1"
+   },
+   "devDependencies": {
+     "@playwright/test": "^1.58.2",
+diff --git a/server.log b/server.log
+new file mode 100644
+index 0000000..7e528a1
+--- /dev/null
++++ b/server.log
+@@ -0,0 +1,10 @@
++[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
++Server is running on http://localhost:3000
++⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
++[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
++{"level":30,"time":1774323976174,"pid":6567,"hostname":"devbox","browser":["Mac OS","Chrome","14.4.1"],"helloMsg":{"clientHello":{"ephemeral":"PZ9WCy0hIVUx2k+NPFHvUIz5xQUEdygrcWEsLBDaBkg="}},"msg":"connected to WA"}
++{"level":30,"time":1774323976318,"pid":6567,"hostname":"devbox","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1035194821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAVQ==","eKeytype":"BQ==","eIdent":"SSIpZuryk3M1OTyFKocdszRfMM8DmErL+a4J3YIUdy4=","eSkeyId":"AAAB","eSkeyVal":"ngOdj2sz/tnaF4EX4dTGrXGsu3Hx1NIkEFFNutY3h04=","eSkeySig":"zrKyC+47Q9nvtunawVkjUCVbUfS0QMN6HCp+j+JaVcLx9OWl926g0sQXjNQdukRa4SJZsRgFbFGVZCFvFmXRBg==","buildHash":"oslHHv+RCp4a5lmJCiiHLQ==","deviceProps":"CgZNYWMgT1MSBggKEA8YBxgBIAEqFxiAUCABMAA4AUABSAFQAVgBYAFwAXgA"},"pull":false},"msg":"not logged in, attempting registration..."}
++User connected to dashboard
++User disconnected from dashboard
++User connected to dashboard
++User disconnected from dashboard
+diff --git a/src/app.js b/src/app.js
+index ebbb4a5..a7cb0cd 100644
+--- a/src/app.js
++++ b/src/app.js
+@@ -3,6 +3,8 @@ const express = require('express');
+ const http = require('http');
+ const { Server } = require('socket.io');
+ const path = require('path');
++const swaggerUi = require('swagger-ui-express');
++const swaggerDocument = require('../docs/swagger.json');
+
+ const { connectToWhatsApp } = require('./whatsapp/client');
+ const { initWebSocket } = require('./websocket/socket');
+@@ -22,6 +24,9 @@ app.use(express.urlencoded({ extended: true }));
+ // Static dashboard
+ app.use('/dashboard', express.static(path.join(__dirname, '../dashboard')));
+
++// API Documentation
++app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
++
+ // API Routes
+ app.use('/api/auth', authRoutes);
+ app.use('/api/messages', messageRoutes);
+diff --git a/src/controllers/webhook.controller.js b/src/controllers/webhook.controller.js
+new file mode 100644
+index 0000000..6662c85
+--- /dev/null
++++ b/src/controllers/webhook.controller.js
+@@ -0,0 +1,36 @@
++const { getConfig, updateConfig } = require('../utils/config');
++
++function getSettings(req, res) {
++    try {
++        const config = getConfig();
++        res.json({ webhookUrl: config.webhookUrl });
++    } catch (error) {
++        res.status(500).json({ error: error.message });
++    }
++}
++
++function updateSettings(req, res) {
++    try {
++        const { webhookUrl } = req.body;
++        if (typeof webhookUrl !== 'string') {
++            return res.status(400).json({ error: 'webhookUrl must be a string' });
++        }
++        const updatedConfig = updateConfig({ webhookUrl });
++        res.json({ success: true, webhookUrl: updatedConfig.webhookUrl });
++    } catch (error) {
++        res.status(500).json({ error: error.message });
++    }
++}
++
++function handleWebhook(req, res) {
++    console.log('--- Webhook received ---');
++    console.log(JSON.stringify(req.body, null, 2));
++    console.log('------------------------');
++    res.status(200).send('Webhook received');
++}
++
++module.exports = {
++    getSettings,
++    updateSettings,
++    handleWebhook
++};
+diff --git a/src/routes/webhook.routes.js b/src/routes/webhook.routes.js
+index fc0eac1..6544c4c 100644
+--- a/src/routes/webhook.routes.js
++++ b/src/routes/webhook.routes.js
+@@ -1,11 +1,12 @@
+ const express = require('express');
+ const router = express.Router();
++const webhookController = require('../controllers/webhook.controller');
+
+-router.post('/webhook', (req, res) => {
+-    console.log('--- Webhook received ---');
+-    console.log(JSON.stringify(req.body, null, 2));
+-    console.log('------------------------');
+-    res.status(200).send('Webhook received');
+-});
++// Existing webhook receiver
++router.post('/webhook', webhookController.handleWebhook);
++
++// Webhook settings
++router.get('/settings/webhook', webhookController.getSettings);
++router.post('/settings/webhook', webhookController.updateSettings);
+
+ module.exports = router;
+diff --git a/src/utils/config.js b/src/utils/config.js
+new file mode 100644
+index 0000000..1c262a4
+--- /dev/null
++++ b/src/utils/config.js
+@@ -0,0 +1,38 @@
++const fs = require('fs');
++const path = require('path');
++
++const configPath = path.join(__dirname, '../../config.json');
++
++const defaultConfig = {
++    webhookUrl: process.env.WEBHOOK_URL || ''
++};
++
++function getConfig() {
++    if (!fs.existsSync(configPath)) {
++        return defaultConfig;
++    }
++    try {
++        const data = fs.readFileSync(configPath, 'utf8');
++        return JSON.parse(data);
++    } catch (error) {
++        console.error('Error reading config file:', error);
++        return defaultConfig;
++    }
++}
++
++function updateConfig(newConfig) {
++    try {
++        const currentConfig = getConfig();
++        const updatedConfig = { ...currentConfig, ...newConfig };
++        fs.writeFileSync(configPath, JSON.stringify(updatedConfig, null, 2));
++        return updatedConfig;
++    } catch (error) {
++        console.error('Error updating config file:', error);
++        throw error;
++    }
++}
++
++module.exports = {
++    getConfig,
++    updateConfig
++};
+diff --git a/src/whatsapp/events.js b/src/whatsapp/events.js
+index 03091a2..0d33fce 100644
+--- a/src/whatsapp/events.js
++++ b/src/whatsapp/events.js
+@@ -1,4 +1,5 @@
+ const axios = require('axios');
++const { getConfig } = require('../utils/config');
+ require('dotenv').config();
+
+ async function handleMessages(m, sock, io) {
+@@ -24,7 +25,8 @@ async function handleMessages(m, sock, io) {
+                 }
+
+                 // Send to webhook
+-                const webhookUrl = process.env.WEBHOOK_URL;
++                const config = getConfig();
++                const webhookUrl = config.webhookUrl;
+                 if (webhookUrl) {
+                     try {
+                         await axios.post(webhookUrl, {
+diff --git a/test-results/.last-run.json b/test-results/.last-run.json
+new file mode 100644
+index 0000000..cbcc1fb
+--- /dev/null
++++ b/test-results/.last-run.json
+@@ -0,0 +1,4 @@
++{
++  "status": "passed",
++  "failedTests": []
++}
+\ No newline at end of file
+diff --git a/tests/verify_ui.spec.js b/tests/verify_ui.spec.js
+new file mode 100644
+index 0000000..51be14a
+--- /dev/null
++++ b/tests/verify_ui.spec.js
+@@ -0,0 +1,36 @@
++const { test, expect } = require('@playwright/test');
++
++test('Verify dashboard has webhook configuration and API docs link', async ({ page }) => {
++  await page.goto('http://localhost:3000/dashboard');
++
++  // Check for the Webhook Configuration card
++  await expect(page.locator('h2', { hasText: 'Webhook Configuration' })).toBeVisible();
++
++  // Check for the Webhook URL input field
++  const webhookInput = page.locator('#webhook-url');
++  await expect(webhookInput).toBeVisible();
++
++  // Check for the API Docs link in navigation
++  const apiDocsLink = page.locator('a', { hasText: 'API Docs' });
++  await expect(apiDocsLink).toBeVisible();
++
++  // Test updating the webhook URL
++  const testUrl = 'https://example.com/webhook';
++  await webhookInput.fill(testUrl);
++
++  // Handle the alert
++  page.on('dialog', async dialog => {
++    await dialog.accept();
++  });
++
++  await page.click('button:has-text("Save Webhook URL")');
++
++  // Refresh and check if it persists
++  await page.reload();
++  await expect(webhookInput).toHaveValue(testUrl);
++});
++
++test('Verify API Docs page loads', async ({ page }) => {
++  await page.goto('http://localhost:3000/api-docs/');
++  await expect(page).toHaveTitle(/Swagger UI/);
++});

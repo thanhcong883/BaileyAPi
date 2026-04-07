@@ -1,0 +1,274 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "WhatsApp Multi-Account API",
+    "version": "1.3.0",
+    "description": "Standardized API for WhatsApp Baileys integration"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "tags": [
+    { "name": "Accounts", "description": "Account management" },
+    { "name": "Messages", "description": "Messaging operations" },
+    { "name": "Config", "description": "Configuration settings" }
+  ],
+  "paths": {
+    "/api/accounts": {
+      "get": {
+        "summary": "List all accounts",
+        "tags": ["Accounts"],
+        "responses": {
+          "200": {
+            "description": "List of accounts with status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "accountId": { "type": "string" },
+                      "isAuthenticated": { "type": "boolean" },
+                      "isListening": { "type": "boolean" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new account",
+        "tags": ["Accounts"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account created successfully"
+          }
+        }
+      }
+    },
+    "/qr/{accountId}.png": {
+      "get": {
+        "summary": "Get login QR code for account",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code image",
+            "content": {
+              "image/png": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "404": { "description": "QR code not found" }
+        }
+      }
+    },
+    "/api/{accountId}": {
+      "delete": {
+        "summary": "Delete account and all its data",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Account deleted" }
+        }
+      }
+    },
+    "/api/{accountId}/re-login": {
+      "post": {
+        "summary": "Force re-login for account",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Login process restarted" }
+        }
+      }
+    },
+    "/api/{accountId}/auth-status": {
+      "get": {
+        "summary": "Get auth status for account",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Auth status" }
+        }
+      }
+    },
+    "/api/{accountId}/refresh-qr": {
+      "post": {
+        "summary": "Refresh QR code for account",
+        "tags": ["Accounts"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Success or failure message" }
+        }
+      }
+    },
+    "/api/{accountId}/send": {
+      "post": {
+        "summary": "Send message",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": { "type": "string" },
+                  "threadId": { "type": "string" },
+                  "type": {
+                    "type": "string",
+                    "enum": ["user", "group"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message sent" }
+        }
+      }
+    },
+    "/api/{accountId}/groups": {
+      "get": {
+        "summary": "Get groups",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of groups" }
+        }
+      }
+    },
+    "/api/{accountId}/messages": {
+      "get": {
+        "summary": "Get messages",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of messages" }
+        }
+      }
+    },
+    "/api/{accountId}/webhook-config": {
+      "get": {
+        "summary": "Get webhook config",
+        "tags": ["Config"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Webhook config" }
+        }
+      },
+      "post": {
+        "summary": "Update webhook config",
+        "tags": ["Config"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Webhook config updated" }
+        }
+      }
+    }
+  }
+}
