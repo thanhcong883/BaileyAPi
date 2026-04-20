@@ -9,10 +9,12 @@ async function send(req, res) {
     }
 
     let to = threadId;
-    if (type === 'user' && !to.includes('@s.whatsapp.net')) {
-        to = to.split('@')[0] + '@s.whatsapp.net';
-    } else if (type === 'group' && !to.includes('@g.us')) {
-        to = to.split('@')[0] + '@g.us';
+    if (!to.includes('@')) {
+        if (type === 'user') {
+            to = to + '@s.whatsapp.net';
+        } else if (type === 'group') {
+            to = to + '@g.us';
+        }
     }
 
     try {
