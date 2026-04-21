@@ -36,7 +36,10 @@ cd project-root
 npm install
 
 ## 3. Environment variables
-Create .env file (optional, default PORT is 3000).
+Create `.env` file (optional). Configurable options:
+- `PORT`: Port the server runs on (default: `3000`).
+- `PUBLIC_BASE_URL`: Base URL exposed for webhooks/media download (default: `http://localhost:${PORT}`).
+- `MEDIA_TTL_MINUTES`: Time-to-live for decrypted media files in minutes (default: `60`).
 
 ---
 
