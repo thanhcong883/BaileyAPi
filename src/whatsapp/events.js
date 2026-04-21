@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { getAccountConfig } = require('../utils/config');
+const { decryptAndSaveMedia } = require('../utils/media');
 require('dotenv').config();
 
 const groupMetadataCache = {};
@@ -58,6 +59,14 @@ async function handleMessages(m, sock, io, accountId) {
                 });
             }
 
+            // Decrypt media if any
+            let media = null;
+            try {
+                media = await decryptAndSaveMedia(msg, sock, accountId);
+            } catch (err) {
+                console.error(`[${accountId}] Unhandled error decrypting media:`, err.message);
+            }
+
             // Send to webhook
             const config = getAccountConfig(accountId);
             const webhookUrl = config.webhookUrl;
@@ -74,7 +83,8 @@ async function handleMessages(m, sock, io, accountId) {
                             participant: msg.key.participant,
                             user_name,
                             group_name,
-                            message: msg.message
+                            message: msg.message,
+                            ...(media ? { media } : {})
                         }
                     });
                 } catch (error) {

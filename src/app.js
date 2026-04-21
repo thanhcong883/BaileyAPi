@@ -15,6 +15,7 @@ const authController = require('./controllers/auth.controller');
 const messageController = require('./controllers/message.controller');
 const groupController = require('./controllers/group.controller');
 const webhookController = require('./controllers/webhook.controller');
+const { cleanupMedia } = require('./utils/media');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +26,14 @@ app.set('io', io);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static media files
+app.use('/media', express.static(path.join(__dirname, '../media'), {
+    fallthrough: false,
+    maxAge: '1h',
+    index: false,
+    dotfiles: 'deny',
+}));
 
 // Static dashboard
 app.use('/dashboard', express.static(path.join(__dirname, '../dashboard')));
@@ -90,6 +99,10 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, async () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+
+    // Schedule media cleanup every 5 minutes
+    setInterval(cleanupMedia, 5 * 60 * 1000);
+    cleanupMedia(); // Also run once on startup
 
     // Init WebSocket
     initWebSocket(io);
