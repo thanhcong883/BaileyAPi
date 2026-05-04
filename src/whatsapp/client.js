@@ -106,12 +106,17 @@ async function logout(accountId) {
     }
 }
 
-async function sendMessage(accountId, to, message) {
+async function sendMessage(accountId, to, messagePayload) {
     const sock = sessions[accountId];
     if (!sock || statuses[accountId] !== 'connected') {
         throw new Error(`WhatsApp account ${accountId} not connected`);
     }
-    return await sock.sendMessage(to, { text: message });
+
+    if (typeof messagePayload === 'string') {
+        return await sock.sendMessage(to, { text: messagePayload });
+    }
+
+    return await sock.sendMessage(to, messagePayload);
 }
 
 async function getGroups(accountId) {
