@@ -77,13 +77,39 @@ http://localhost:3000/api-docs
 `GET /api/auth/accounts`
 
 ### Send Message
-`POST /api/messages/send`
-Request Body:
+`POST /api/:accountId/send`
+
+**Send Text:**
 ```json
 {
-  "accountId": "my_account_1",
-  "to": "849xxxxxxxxx@s.whatsapp.net",
-  "message": "Hello"
+  "threadId": "849xxxxxxxxx",
+  "type": "user",
+  "text": "Hello"
+}
+```
+
+**Send Media (Image via URL):**
+```json
+{
+  "threadId": "849xxxxxxxxx",
+  "type": "user",
+  "message": {
+    "image": { "url": "https://example.com/image.jpg" },
+    "caption": "Hello this is an image"
+  }
+}
+```
+
+**Send Document (PDF via URL):**
+```json
+{
+  "threadId": "849xxxxxxxxx",
+  "type": "user",
+  "message": {
+    "document": { "url": "https://example.com/file.pdf" },
+    "mimetype": "application/pdf",
+    "fileName": "document.pdf"
+  }
 }
 ```
 

@@ -2,10 +2,10 @@ const { sendMessage } = require('../whatsapp/client');
 
 async function send(req, res) {
     const { accountId } = req.params;
-    const { text, threadId, type } = req.body;
+    const { text, message, threadId, type } = req.body;
 
-    if (!text || !threadId) {
-        return res.status(400).json({ error: 'text and threadId are required' });
+    if ((!text && !message) || !threadId) {
+        return res.status(400).json({ error: 'text or message, and threadId are required' });
     }
 
     let to = threadId;
@@ -18,7 +18,8 @@ async function send(req, res) {
     }
 
     try {
-        await sendMessage(accountId, to, text);
+        const payload = message || text;
+        await sendMessage(accountId, to, payload);
         res.json({ success: true, accountId });
     } catch (error) {
         res.status(500).json({ error: error.message });
